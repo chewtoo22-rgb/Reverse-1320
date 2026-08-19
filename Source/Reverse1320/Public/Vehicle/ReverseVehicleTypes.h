@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Vehicle/ReverseLaunchTypes.h"
 #include "ReverseVehicleTypes.generated.h"
 
 UENUM(BlueprintType)
@@ -51,6 +52,9 @@ struct FReverseTireData
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     float LongitudinalStiffness = 11.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    FReverseTireThermalData Thermal;
 };
 
 USTRUCT(BlueprintType)
@@ -121,6 +125,12 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Transmission")
     FReverseGearboxData Gearbox;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Launch")
+    FReverseLaunchDeviceData LaunchDevice;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Launch")
+    FReverseWheelieControlData WheelieControl;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tires")
     FReverseTireData DriveTires;
