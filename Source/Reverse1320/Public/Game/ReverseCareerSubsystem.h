@@ -16,6 +16,12 @@ public:
     UFUNCTION(BlueprintPure, Category="Reverse1320|Career")
     const FReversePlayerProfile& GetProfile() const { return Profile; }
 
+    UFUNCTION(BlueprintCallable, Category="Reverse1320|Career")
+    bool SaveProfile(const FString& SlotName = TEXT("Reverse1320_Profile"), int32 UserIndex = 0);
+
+    UFUNCTION(BlueprintCallable, Category="Reverse1320|Career")
+    bool LoadProfile(const FString& SlotName = TEXT("Reverse1320_Profile"), int32 UserIndex = 0);
+
     UFUNCTION(BlueprintCallable, Category="Reverse1320|Garage")
     bool AddVehicle(FName VehicleDefinitionId, FName InstanceId, const FString& Nickname);
 
@@ -47,6 +53,7 @@ public:
     void SettleEvent(const FReverseRaceEventDefinition& Event, bool bWon);
 
 private:
+    bool MigrateProfileIfNeeded(FReversePlayerProfile& InOutProfile, int32 SavedSchemaVersion) const;
     FReverseOwnedVehicle* FindVehicle(FName InstanceId);
     FReverseOwnedPart* FindPart(FName InstanceId);
     FReversePlayerProfile Profile;
