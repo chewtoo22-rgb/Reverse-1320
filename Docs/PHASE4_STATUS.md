@@ -12,18 +12,19 @@
 - Nitrous is modeled as a data-driven torque multiplier.
 - Shift events impose configurable torque interruption.
 - Timeslip records reaction time, 60 ft, 330 ft, 1/8 ET/MPH, 1000 ft and 1/4 ET/MPH.
-- Tire thermal model now supports cold, optimal and overheated grip states.
+- Tire thermal model supports cold, optimal and overheated grip states.
 - Burnout input heats the drive tires; coasting/staging cools them toward ambient.
-- Track grip now responds to prep level, rubber level, surface temperature, moisture and lane degradation.
+- Track grip responds to prep level, rubber level, surface temperature, moisture and lane degradation.
 - Direct clutch, torque-converter and dual-clutch launch device types are represented.
 - Torque-converter launch multiplication depends on stall-RPM proximity and ramps into the drag solver.
 - Wheelie demand is estimated from longitudinal load transfer and center-of-mass geometry.
 - Optional wheelie-bar contact caps pitch and prevents complete front-axle unloading.
 - Launch dynamics feed dynamic grip and launch-torque multipliers directly into the quarter-mile runtime.
-- Race vehicle coordinator now owns burnout -> pre-stage -> stage -> tree -> launch -> shift/nitrous -> finish.
+- Race vehicle coordinator owns burnout -> pre-stage -> stage -> tree -> launch -> shift/nitrous -> finish.
+- Shared race input component gives touch UI and gamepad/controller one command path for throttle, staging, launch, shifting and nitrous.
 - Android low/mid/high rendering tiers are present without changing the production-art direction.
 - Vehicle-reference manifest tracks the first ten supplied reference sheets.
-- GitHub Actions physics-sanity workflow added for tire/track invariants.
+- GitHub Actions physics-sanity workflow added for tire/track invariants; CI is active on the Phase 4 branch/PR.
 
 ## Not yet claimed complete
 
@@ -32,7 +33,6 @@
 - No physical-device run has been performed.
 - Torque curves, grip values, converter behavior and shift behavior still require calibration against representative builds.
 - Production 3D vehicle meshes are not yet ingested.
-- Touch/controller command mapping still needs its final runtime layer.
 - Burnout smoke, tire deformation, suspension/wheelie animation and track VFX are not yet implemented as production visuals.
 
 ## Phase 4 completion gate
