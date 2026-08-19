@@ -1,0 +1,22 @@
+name: Phase 5 Game Systems Sanity
+
+on:
+  push:
+    branches:
+      - phase5/game-systems
+  pull_request:
+    branches:
+      - phase4/android-vehicle-runtime
+
+jobs:
+  game-systems:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run game-system regression checks
+        run: python Tools/phase5_game_systems_sanity.py
