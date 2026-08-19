@@ -1,0 +1,25 @@
+name: Phase 4 Physics Sanity
+
+on:
+  push:
+    branches:
+      - main
+      - phase4/android-vehicle-runtime
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  physics-sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Phase 4 deterministic sanity checks
+        run: python Tools/phase4_physics_sanity.py
