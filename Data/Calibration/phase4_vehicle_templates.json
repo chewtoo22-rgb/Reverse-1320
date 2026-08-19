@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "note": "Representative tuning baselines only. Values are calibration seeds, not claims of OEM specifications.",
+  "vehicles": [
+    {
+      "id": "VREF-009-import-drag",
+      "class": "import_drag_coupe",
+      "drive_layout": "RWD",
+      "mass_kg": 1425,
+      "wheelbase_m": 2.55,
+      "cg_height_m": 0.50,
+      "drag_coefficient": 0.34,
+      "frontal_area_m2": 1.95,
+      "tire_grip": 1.55,
+      "final_drive": 3.73,
+      "shift_time_s": 0.11,
+      "redline_rpm": 8500,
+      "nitrous_multiplier": 1.0
+    },
+    {
+      "id": "VREF-004-modern-muscle-sedan",
+      "class": "modern_muscle_sedan",
+      "drive_layout": "RWD",
+      "mass_kg": 1960,
+      "wheelbase_m": 3.05,
+      "cg_height_m": 0.56,
+      "drag_coefficient": 0.36,
+      "frontal_area_m2": 2.35,
+      "tire_grip": 1.32,
+      "final_drive": 3.09,
+      "shift_time_s": 0.15,
+      "redline_rpm": 6800,
+      "nitrous_multiplier": 1.0
+    },
+    {
+      "id": "VREF-002-performance-suv",
+      "class": "performance_suv",
+      "drive_layout": "AWD",
+      "mass_kg": 2350,
+      "wheelbase_m": 3.05,
+      "cg_height_m": 0.72,
+      "drag_coefficient": 0.39,
+      "frontal_area_m2": 2.75,
+      "tire_grip": 1.25,
+      "final_drive": 3.70,
+      "shift_time_s": 0.14,
+      "redline_rpm": 6500,
+      "nitrous_multiplier": 1.0
+    },
+    {
+      "id": "VREF-010-compact-performance-pickup",
+      "class": "compact_performance_pickup",
+      "drive_layout": "RWD",
+      "mass_kg": 1650,
+      "wheelbase_m": 2.75,
+      "cg_height_m": 0.63,
+      "drag_coefficient": 0.40,
+      "frontal_area_m2": 2.40,
+      "tire_grip": 1.28,
+      "final_drive": 3.42,
+      "shift_time_s": 0.16,
+      "redline_rpm": 6200,
+      "nitrous_multiplier": 1.0
+    }
+  ]
+}
