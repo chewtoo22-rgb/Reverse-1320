@@ -35,7 +35,6 @@ bool UReverseCareerSubsystem::LoadProfile(const FString& SlotName, int32 UserInd
 bool UReverseCareerSubsystem::MigrateProfileIfNeeded(FReversePlayerProfile& InOutProfile, int32 SavedSchemaVersion) const
 {
     if (SavedSchemaVersion > UReverseProfileSaveGame::CurrentSchemaVersion) return false;
-    // Future migrations are applied incrementally here: v1 -> v2 -> v3, never by destructive reset.
     InOutProfile.SchemaVersion = UReverseProfileSaveGame::CurrentSchemaVersion;
     return true;
 }
@@ -69,13 +68,60 @@ bool UReverseCareerSubsystem::SetActiveVehicle(FName InstanceId)
     return true;
 }
 
+bool UReverseCareerSubsystem::ExtractVehicleForTransfer(FName VehicleInstanceId, FReverseVehicleTransferBundle& OutBundle)
+{
+    OutBundle = FReverseVehicleTransferBundle();
+    const int32 VehicleIndex = Profile.Garage.IndexOfByPredicate([VehicleInstanceId](const FReverseOwnedVehicle& V){ return V.InstanceId == VehicleInstanceId; });
+    if (VehicleIndex == INDEX_NONE) return false;
+
+    OutBundle.Vehicle = Profile.Garage[VehicleIndex];
+    for (const FName PartInstanceId : OutBundle.Vehicle.InstalledPartInstances)
+    {
+        const int32 PartIndex = Profile.Inventory.IndexOfByPredicate([PartInstanceId](const FReverseOwnedPart& P){ return P.InstanceId == PartInstanceId; });
+        if (PartIndex != INDEX_NONE)
+        {
+            OutBundle.InstalledParts.Add(Profile.Inventory[PartIndex]);
+        }
+    }
+    if (!OutBundle.Vehicle.ActiveTuneId.IsNone())
+    {
+        if (const FReverseTunePreset* Tune = Profile.Tunes.FindByPredicate([&](const FReverseTunePreset& T){ return T.TuneId == OutBundle.Vehicle.ActiveTuneId; }))
+            OutBundle.RelatedTunes.Add(*Tune);
+    }
+
+    if (!OutBundle.IsValid()) return false;
+
+    for (const FReverseOwnedPart& Part : OutBundle.InstalledParts)
+        Profile.Inventory.RemoveAll([&Part](const FReverseOwnedPart& P){ return P.InstanceId == Part.InstanceId; });
+    for (const FReverseTunePreset& Tune : OutBundle.RelatedTunes)
+        Profile.Tunes.RemoveAll([&Tune](const FReverseTunePreset& T){ return T.TuneId == Tune.TuneId; });
+    Profile.Garage.RemoveAt(VehicleIndex);
+
+    if (Profile.ActiveVehicleInstance == VehicleInstanceId)
+        Profile.ActiveVehicleInstance = Profile.Garage.Num() > 0 ? Profile.Garage[0].InstanceId : NAME_None;
+    return true;
+}
+
+bool UReverseCareerSubsystem::ImportTransferredVehicle(const FReverseVehicleTransferBundle& Bundle)
+{
+    if (!Bundle.IsValid() || FindVehicle(Bundle.Vehicle.InstanceId)) return false;
+    for (const FReverseOwnedPart& Incoming : Bundle.InstalledParts)
+        if (FindPart(Incoming.InstanceId)) return false;
+
+    Profile.Garage.Add(Bundle.Vehicle);
+    for (const FReverseOwnedPart& Part : Bundle.InstalledParts) Profile.Inventory.Add(Part);
+    for (const FReverseTunePreset& Tune : Bundle.RelatedTunes)
+    {
+        if (!Profile.Tunes.ContainsByPredicate([&](const FReverseTunePreset& T){ return T.TuneId == Tune.TuneId; })) Profile.Tunes.Add(Tune);
+    }
+    if (Profile.ActiveVehicleInstance.IsNone()) Profile.ActiveVehicleInstance = Bundle.Vehicle.InstanceId;
+    return true;
+}
+
 bool UReverseCareerSubsystem::AddPart(FName PartId, FName InstanceId, EReversePartSlot Slot)
 {
     if (PartId.IsNone() || InstanceId.IsNone() || FindPart(InstanceId)) return false;
-    FReverseOwnedPart P;
-    P.PartId = PartId; P.InstanceId = InstanceId; P.Slot = Slot;
-    Profile.Inventory.Add(P);
-    return true;
+    FReverseOwnedPart P; P.PartId = PartId; P.InstanceId = InstanceId; P.Slot = Slot; Profile.Inventory.Add(P); return true;
 }
 
 bool UReverseCareerSubsystem::InstallPart(FName VehicleInstanceId, FName PartInstanceId)
@@ -83,49 +129,36 @@ bool UReverseCareerSubsystem::InstallPart(FName VehicleInstanceId, FName PartIns
     FReverseOwnedVehicle* Vehicle = FindVehicle(VehicleInstanceId);
     FReverseOwnedPart* Part = FindPart(PartInstanceId);
     if (!Vehicle || !Part) return false;
-
     for (int32 i = Vehicle->InstalledPartInstances.Num() - 1; i >= 0; --i)
     {
         FReverseOwnedPart* Existing = FindPart(Vehicle->InstalledPartInstances[i]);
-        if (Existing && Existing->Slot == Part->Slot)
-        {
-            Existing->bInstalled = false;
-            Vehicle->InstalledPartInstances.RemoveAt(i);
-        }
+        if (Existing && Existing->Slot == Part->Slot) { Existing->bInstalled = false; Vehicle->InstalledPartInstances.RemoveAt(i); }
     }
     if (!Vehicle->InstalledPartInstances.Contains(PartInstanceId)) Vehicle->InstalledPartInstances.Add(PartInstanceId);
-    Part->bInstalled = true;
-    return true;
+    Part->bInstalled = true; return true;
 }
 
 bool UReverseCareerSubsystem::RemovePart(FName VehicleInstanceId, FName PartInstanceId)
 {
-    FReverseOwnedVehicle* Vehicle = FindVehicle(VehicleInstanceId);
-    FReverseOwnedPart* Part = FindPart(PartInstanceId);
+    FReverseOwnedVehicle* Vehicle = FindVehicle(VehicleInstanceId); FReverseOwnedPart* Part = FindPart(PartInstanceId);
     if (!Vehicle || !Part || !Vehicle->InstalledPartInstances.Remove(PartInstanceId)) return false;
-    Part->bInstalled = false;
-    return true;
+    Part->bInstalled = false; return true;
 }
 
 bool UReverseCareerSubsystem::SaveTune(FName VehicleInstanceId, const FReverseTunePreset& Tune)
 {
     FReverseOwnedVehicle* Vehicle = FindVehicle(VehicleInstanceId);
     if (!Vehicle || Tune.TuneId.IsNone()) return false;
-    if (FReverseTunePreset* Existing = Profile.Tunes.FindByPredicate([&Tune](const FReverseTunePreset& T){ return T.TuneId == Tune.TuneId; })) *Existing = Tune;
-    else Profile.Tunes.Add(Tune);
-    Vehicle->ActiveTuneId = Tune.TuneId;
-    return true;
+    if (FReverseTunePreset* Existing = Profile.Tunes.FindByPredicate([&Tune](const FReverseTunePreset& T){ return T.TuneId == Tune.TuneId; })) *Existing = Tune; else Profile.Tunes.Add(Tune);
+    Vehicle->ActiveTuneId = Tune.TuneId; return true;
 }
 
 bool UReverseCareerSubsystem::ApplyTransaction(EReverseTransactionType Type, int64 Amount, const FString& Reason)
 {
     if (Amount < 0 && Profile.Cash < -Amount) return false;
     Profile.Cash += Amount;
-    FReverseLedgerEntry Entry;
-    Entry.TransactionId = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphensLower);
-    Entry.Type = Type; Entry.Amount = Amount; Entry.Reason = Reason; Entry.TimestampUtc = FDateTime::UtcNow();
-    Profile.Ledger.Add(Entry);
-    return true;
+    FReverseLedgerEntry Entry; Entry.TransactionId = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphensLower); Entry.Type = Type; Entry.Amount = Amount; Entry.Reason = Reason; Entry.TimestampUtc = FDateTime::UtcNow();
+    Profile.Ledger.Add(Entry); return true;
 }
 
 bool UReverseCareerSubsystem::IsEligibleForEvent(const FReverseRaceEventDefinition& Event, FString& FailureReason) const
