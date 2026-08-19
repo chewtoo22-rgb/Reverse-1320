@@ -1,11 +1,43 @@
 #include "Game/ReverseCareerSubsystem.h"
+#include "Game/ReverseProfileSaveGame.h"
+#include "Kismet/GameplayStatics.h"
 
 void UReverseCareerSubsystem::CreateNewProfile(const FString& RacerName, int64 StartingCash)
 {
     Profile = FReversePlayerProfile();
+    Profile.SchemaVersion = UReverseProfileSaveGame::CurrentSchemaVersion;
     Profile.RacerName = RacerName;
     Profile.Cash = 0;
     ApplyTransaction(EReverseTransactionType::StartingFunds, FMath::Max<int64>(0, StartingCash), TEXT("New racer starting funds"));
+}
+
+bool UReverseCareerSubsystem::SaveProfile(const FString& SlotName, int32 UserIndex)
+{
+    UReverseProfileSaveGame* Save = Cast<UReverseProfileSaveGame>(UGameplayStatics::CreateSaveGameObject(UReverseProfileSaveGame::StaticClass()));
+    if (!Save) return false;
+    Profile.SchemaVersion = UReverseProfileSaveGame::CurrentSchemaVersion;
+    Save->SchemaVersion = UReverseProfileSaveGame::CurrentSchemaVersion;
+    Save->Profile = Profile;
+    Save->SavedAtUtc = FDateTime::UtcNow();
+    return UGameplayStatics::SaveGameToSlot(Save, SlotName, UserIndex);
+}
+
+bool UReverseCareerSubsystem::LoadProfile(const FString& SlotName, int32 UserIndex)
+{
+    UReverseProfileSaveGame* Save = Cast<UReverseProfileSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
+    if (!Save) return false;
+    FReversePlayerProfile Loaded = Save->Profile;
+    if (!MigrateProfileIfNeeded(Loaded, Save->SchemaVersion)) return false;
+    Profile = MoveTemp(Loaded);
+    return true;
+}
+
+bool UReverseCareerSubsystem::MigrateProfileIfNeeded(FReversePlayerProfile& InOutProfile, int32 SavedSchemaVersion) const
+{
+    if (SavedSchemaVersion > UReverseProfileSaveGame::CurrentSchemaVersion) return false;
+    // Future migrations are applied incrementally here: v1 -> v2 -> v3, never by destructive reset.
+    InOutProfile.SchemaVersion = UReverseProfileSaveGame::CurrentSchemaVersion;
+    return true;
 }
 
 FReverseOwnedVehicle* UReverseCareerSubsystem::FindVehicle(FName InstanceId)
@@ -52,7 +84,6 @@ bool UReverseCareerSubsystem::InstallPart(FName VehicleInstanceId, FName PartIns
     FReverseOwnedPart* Part = FindPart(PartInstanceId);
     if (!Vehicle || !Part) return false;
 
-    // One installed part per slot for the first clean implementation. Replaced parts return to inventory.
     for (int32 i = Vehicle->InstalledPartInstances.Num() - 1; i >= 0; --i)
     {
         FReverseOwnedPart* Existing = FindPart(Vehicle->InstalledPartInstances[i]);
