@@ -1,0 +1,52 @@
+name: Phase 4 Unreal Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - phase4/android-vehicle-runtime
+    paths:
+      - 'Source/**'
+      - 'Config/**'
+      - 'Content/**'
+      - 'Reverse1320.uproject'
+      - '.github/workflows/phase4-unreal-android.yml'
+
+jobs:
+  android-package:
+    runs-on: [self-hosted, windows, unreal-5.8, android]
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Unreal root
+        shell: powershell
+        run: |
+          if (-not $env:UE_ROOT) { throw 'UE_ROOT is not set on the runner.' }
+          $uat = Join-Path $env:UE_ROOT 'Engine\Build\BatchFiles\RunUAT.bat'
+          if (-not (Test-Path $uat)) { throw "RunUAT.bat not found at $uat" }
+          Write-Host "Using Unreal at $env:UE_ROOT"
+
+      - name: Build and package Android Development APK
+        shell: cmd
+        run: |
+          "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun ^
+            -project="%GITHUB_WORKSPACE%\Reverse1320.uproject" ^
+            -noP4 ^
+            -platform=Android ^
+            -clientconfig=Development ^
+            -build ^
+            -cook ^
+            -pak ^
+            -stage ^
+            -package ^
+            -archive ^
+            -archivedirectory="%GITHUB_WORKSPACE%\Artifacts\Android"
+
+      - name: Upload Android package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reverse1320-Android-Development
+          path: Artifacts/Android/**
+          if-no-files-found: error
