@@ -4,6 +4,7 @@
 
 - Canonical GitHub project initialized.
 - Dedicated `phase4/android-vehicle-runtime` branch created.
+- Project is now a real Unreal project with `.uproject`, runtime module, game/editor targets and Android configuration.
 - Production vehicle definition supports FWD/RWD/AWD, mass, wheelbase, center of mass, aerodynamics, torque curves, induction, boost, nitrous, gearbox and drive-tire data.
 - Deterministic quarter-mile runtime implemented.
 - Runtime resolves engine torque -> gearing -> wheel torque -> requested tire force -> traction limit -> aero/rolling losses -> acceleration.
@@ -24,17 +25,24 @@
 - Shared race input component gives touch UI and gamepad/controller one command path for throttle, staging, launch, shifting and nitrous.
 - Android low/mid/high rendering tiers are present without changing the production-art direction.
 - Vehicle-reference manifest tracks the first ten supplied reference sheets.
-- GitHub Actions physics-sanity workflow added for tire/track invariants; CI is active on the Phase 4 branch/PR.
+- Representative vehicle calibration templates added for import-drag, muscle-sedan, performance-SUV and compact-pickup classes; these are explicit calibration seeds rather than claimed OEM specifications.
+- GitHub Actions tire/track invariant workflow is green.
+- Standalone C++17 deterministic drag core compiles and runs in GitHub Actions.
+- Compiled-core regression output: baseline 11.5208 @ 129.96 mph, poor-track 12.5958, nitrous 10.8333 @ 137.332 mph, +500 kg 12.8417.
+- Unreal Android package workflow added for a self-hosted Windows runner with UE 5.8 + Android toolchain.
+- Android physical-device gate documented explicitly.
+- Package boot path now uses a C++ Phase 4 game mode and automated vertical-slice actor requiring no project-authored binary assets.
+- Automated package test performs burnout -> pre-stage -> stage -> tree -> launch -> automatic shifts/nitrous -> finish and emits live telemetry plus a full timeslip to the screen/log.
 
-## Not yet claimed complete
+## Remaining hard boundaries
 
-- Runtime has not yet been compiled by UnrealBuildTool in this repository.
-- No Android APK/AAB has been produced from this branch yet.
-- No physical-device run has been performed.
-- Torque curves, grip values, converter behavior and shift behavior still require calibration against representative builds.
-- Production 3D vehicle meshes are not yet ingested.
+- UnrealBuildTool has not yet compiled this branch on an Unreal-capable runner.
+- No Android APK/AAB has yet been produced from this branch.
+- No physical-device run has yet been performed.
+- Production 3D vehicle meshes are not yet ingested; reference sheets are not considered game-ready meshes.
+- Torque curves, grip values, converter behavior and shift behavior still require calibration against representative real builds and desired game balance.
 - Burnout smoke, tire deformation, suspension/wheelie animation and track VFX are not yet implemented as production visuals.
 
 ## Phase 4 completion gate
 
-Phase 4 cannot be marked PASS until an Android build compiles, installs on a physical device, runs the complete garage-to-timeslip loop and records a reproducible quarter-mile result without placeholder-only gameplay dependencies.
+Phase 4 cannot be marked PASS until an Unreal 5.8 Android build compiles, packages, installs on physical ARM64 Android hardware, runs the complete device test/garage-to-timeslip path, records a reproducible quarter-mile result, and at least one approved production 3D vehicle is ingested with authored materials/LODs rather than placeholder-only art.
