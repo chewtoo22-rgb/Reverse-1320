@@ -1,0 +1,23 @@
+name: Phase 4 Compiled Core
+
+on:
+  push:
+    branches:
+      - main
+      - phase4/android-vehicle-runtime
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  compiled-core:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build deterministic core tests
+        run: g++ -std=c++17 -O2 -Wall -Wextra -pedantic Tests/physics_core_test.cpp -o physics_core_test
+
+      - name: Run deterministic core tests
+        run: ./physics_core_test
