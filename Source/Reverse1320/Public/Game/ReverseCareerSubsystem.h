@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Game/ReverseGameTypes.h"
+#include "Game/ReverseOwnershipTypes.h"
 #include "ReverseCareerSubsystem.generated.h"
 
 UCLASS()
@@ -27,6 +28,12 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="Reverse1320|Garage")
     bool SetActiveVehicle(FName InstanceId);
+
+    UFUNCTION(BlueprintCallable, Category="Reverse1320|Garage")
+    bool ExtractVehicleForTransfer(FName VehicleInstanceId, FReverseVehicleTransferBundle& OutBundle);
+
+    UFUNCTION(BlueprintCallable, Category="Reverse1320|Garage")
+    bool ImportTransferredVehicle(const FReverseVehicleTransferBundle& Bundle);
 
     UFUNCTION(BlueprintCallable, Category="Reverse1320|Inventory")
     bool AddPart(FName PartId, FName InstanceId, EReversePartSlot Slot);
