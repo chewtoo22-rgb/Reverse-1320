@@ -36,6 +36,8 @@ void UReverseDragPhysicsComponent::ResetRun()
     Slip = FReverseTimingSlip();
     ThrottleInput = 0.0f;
     TrackGrip = 1.0f;
+    ExternalGripMultiplier = 1.0f;
+    ExternalTorqueMultiplier = 1.0f;
     ShiftTimer = 0.0f;
     bLaunched = false;
 
@@ -78,6 +80,16 @@ bool UReverseDragPhysicsComponent::ShiftUp()
 void UReverseDragPhysicsComponent::SetNitrous(bool bEnabled)
 {
     State.bNitrousActive = bEnabled && Vehicle && Vehicle->NitrousTorqueMultiplier > 1.0f;
+}
+
+void UReverseDragPhysicsComponent::SetExternalGripMultiplier(float Value)
+{
+    ExternalGripMultiplier = FMath::Clamp(Value, 0.25f, 2.0f);
+}
+
+void UReverseDragPhysicsComponent::SetExternalTorqueMultiplier(float Value)
+{
+    ExternalTorqueMultiplier = FMath::Clamp(Value, 0.25f, 3.0f);
 }
 
 float UReverseDragPhysicsComponent::SampleTorque(float RPM) const
@@ -153,7 +165,8 @@ float UReverseDragPhysicsComponent::CalculateMaxTireForce(float AccelerationGues
         return 0.0f;
     }
 
-    return CalculateDrivenAxleLoad(AccelerationGuess) * Vehicle->DriveTires.BaseGripCoefficient * TrackGrip;
+    return CalculateDrivenAxleLoad(AccelerationGuess) * Vehicle->DriveTires.BaseGripCoefficient *
+        TrackGrip * ExternalGripMultiplier;
 }
 
 void UReverseDragPhysicsComponent::CaptureSplits(float PreviousDistance, float PreviousTime)
@@ -220,6 +233,8 @@ void UReverseDragPhysicsComponent::TickComponent(float DeltaTime, ELevelTick Tic
         EngineTorque *= Vehicle->NitrousTorqueMultiplier;
     }
 
+    EngineTorque *= ExternalTorqueMultiplier;
+
     if (ShiftTimer > 0.0f)
     {
         EngineTorque *= 0.12f;
@@ -228,16 +243,18 @@ void UReverseDragPhysicsComponent::TickComponent(float DeltaTime, ELevelTick Tic
     const float WheelTorque = EngineTorque * GearRatio * Vehicle->Gearbox.FinalDrive * Vehicle->DrivetrainEfficiency;
     const float RequestedDriveForce = WheelTorque / FMath::Max(0.05f, Vehicle->DriveTires.RadiusMeters);
 
-    float AccelerationGuess = RequestedDriveForce / FMath::Max(1.0f, Vehicle->MassKg);
+    const float AccelerationGuess = RequestedDriveForce / FMath::Max(1.0f, Vehicle->MassKg);
     const float TireLimit = CalculateMaxTireForce(AccelerationGuess);
     const float DriveForce = FMath::Min(RequestedDriveForce, TireLimit);
-    State.WheelSlip = RequestedDriveForce > KINDA_SMALL_NUMBER ? FMath::Max(0.0f, RequestedDriveForce / FMath::Max(1.0f, TireLimit) - 1.0f) : 0.0f;
+    State.WheelSlip = RequestedDriveForce > KINDA_SMALL_NUMBER ?
+        FMath::Max(0.0f, RequestedDriveForce / FMath::Max(1.0f, TireLimit) - 1.0f) : 0.0f;
 
     const float SpeedSq = State.SpeedMetersPerSecond * State.SpeedMetersPerSecond;
     const float AeroDrag = 0.5f * Reverse1320Physics::AirDensity * Vehicle->DragCoefficient * Vehicle->FrontalAreaSquareMeters * SpeedSq;
     const float RollingResistance = Vehicle->DriveTires.RollingResistanceCoefficient * Vehicle->MassKg * Reverse1320Physics::Gravity;
     const float NetForce = DriveForce - AeroDrag - RollingResistance;
     const float Acceleration = NetForce / FMath::Max(1.0f, Vehicle->MassKg);
+    State.LongitudinalAccelerationMps2 = Acceleration;
 
     State.SpeedMetersPerSecond = FMath::Max(0.0f, State.SpeedMetersPerSecond + Acceleration * Dt);
     State.DistanceMeters += State.SpeedMetersPerSecond * Dt;
