@@ -28,6 +28,7 @@ struct FReverseVehicleRuntimeState
     UPROPERTY(BlueprintReadOnly) float TimeSeconds = 0.0f;
     UPROPERTY(BlueprintReadOnly) float DistanceMeters = 0.0f;
     UPROPERTY(BlueprintReadOnly) float SpeedMetersPerSecond = 0.0f;
+    UPROPERTY(BlueprintReadOnly) float LongitudinalAccelerationMps2 = 0.0f;
     UPROPERTY(BlueprintReadOnly) float EngineRPM = 850.0f;
     UPROPERTY(BlueprintReadOnly) int32 Gear = 1;
     UPROPERTY(BlueprintReadOnly) float WheelSlip = 0.0f;
@@ -62,6 +63,12 @@ public:
     UFUNCTION(BlueprintCallable, Category="Reverse1320|Vehicle")
     void SetNitrous(bool bEnabled);
 
+    UFUNCTION(BlueprintCallable, Category="Reverse1320|Vehicle")
+    void SetExternalGripMultiplier(float Value);
+
+    UFUNCTION(BlueprintCallable, Category="Reverse1320|Vehicle")
+    void SetExternalTorqueMultiplier(float Value);
+
     UFUNCTION(BlueprintPure, Category="Reverse1320|Vehicle")
     const FReverseVehicleRuntimeState& GetRuntimeState() const { return State; }
 
@@ -79,6 +86,8 @@ private:
 
     float ThrottleInput = 0.0f;
     float TrackGrip = 1.0f;
+    float ExternalGripMultiplier = 1.0f;
+    float ExternalTorqueMultiplier = 1.0f;
     float ShiftTimer = 0.0f;
     bool bLaunched = false;
 
