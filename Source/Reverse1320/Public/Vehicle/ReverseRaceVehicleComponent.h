@@ -68,6 +68,12 @@ public:
     UFUNCTION(BlueprintPure, Category="Reverse1320|RaceVehicle")
     FReverseLaunchRuntimeState GetLaunchState() const;
 
+    UFUNCTION(BlueprintPure, Category="Reverse1320|RaceVehicle")
+    FReverseVehicleRuntimeState GetRuntimeState() const
+    {
+        return DragPhysics ? DragPhysics->GetRuntimeState() : FReverseVehicleRuntimeState();
+    }
+
 protected:
     virtual void BeginPlay() override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType,
